@@ -7,7 +7,9 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface Action 
+public @interface Listener 
 {
+	public enum Type { Unspecified, Action, PropertyChange };
 	String value();
+	Type type() default Type.Unspecified;
 }

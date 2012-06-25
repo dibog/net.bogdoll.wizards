@@ -1,7 +1,5 @@
 package net.bogdoll.wizards;
 
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -10,33 +8,50 @@ import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
+import net.bogdoll.property.Property;
 import net.bogdoll.swing.AnnotatedAction;
+import net.bogdoll.swing.Listener;
 
 public class WizardController<WC>
 {
+	public static final Object FINISHED_OPTION = new Object();
+	public static final Object CANCELED_OPTION = new Object();
+	
 	public static final String PROP_PAGE_VISUAL = "pageVisual";
 	public static final String PROP_STEP_NAMES = "stepNames";
 	public static final String PROP_PAGE_MESSAGES = "pageMessages";
+	public static final String PROP_ENABLE_FINISH = "enableFinish";
+	public static final String PROP_CURRENT_PAGE = "currentPage";
 	
 	private final WizardPageProvider<WC> mPageProvider;
 	private final WC mContext;
-	private JComponent mPageVisual;
-	private List<String> mPageNames = Collections.emptyList();
-	private List<Message> mMessages;
-	private PropertyChangeSupport mPCS = new PropertyChangeSupport(this);
+
+	private Property<List<String>> mPageNames = new Property<List<String>>(Collections.<String>emptyList());
+	private Property<WizardPage<WC>> mCurrentPage;
 	
 	private AnnotatedAction mNext;
 	private AnnotatedAction mPrev;
 	private AnnotatedAction mFinish;
 	private AnnotatedAction mCancel;
 	
+	private Object mResult;
+	
 	public WizardController(WizardPageProvider<WC> aPageProvider, WC aContext) {
+		mResult = CANCELED_OPTION;
 		mContext = aContext;
 		mPageProvider = aPageProvider;
-		mPageProvider.getCurrent().restoreSettings(mContext);
-		setPageVisual(mPageProvider.getCurrent().getVisual());
+		
+		mCurrentPage = mPageProvider.currentPageProperty();
+		
+		setFirstPage(mCurrentPage.get());
+	}
+	
+	private void setFirstPage(WizardPage<WC> aFirstPage) {
 
-		addPageStepName(mPageProvider.getCurrent().getName());
+		aFirstPage.restoreSettings(mContext);
+		addPageStepName(aFirstPage.getName());
+
+		aFirstPage.checkIfValid();
 		
 		refreshUI();
 	}
@@ -44,7 +59,6 @@ public class WizardController<WC>
 	Action getPrevAction() {
 		if(mPrev==null) {
 			mPrev = new AnnotatedAction(this, "prev");
-			mPrev.setText("<<");
 		}
 		return mPrev;
 	}
@@ -52,7 +66,6 @@ public class WizardController<WC>
 	Action getNextAction() {
 		if(mNext==null) {
 			mNext = new AnnotatedAction(this, "next");
-			mNext.setText(">>");
 		}
 		return mNext;
 	}
@@ -60,7 +73,6 @@ public class WizardController<WC>
 	Action getFinishAction() {
 		if(mFinish==null) {
 			mFinish = new AnnotatedAction(this, "finish");
-			mFinish.setText("Finish");
 		}
 		return mFinish;
 	}
@@ -68,132 +80,97 @@ public class WizardController<WC>
 	Action getCancelAction() {
 		if(mCancel==null) {
 			mCancel = new AnnotatedAction(this, "cancel");
-			mCancel.setText("Cancel");
 		}
 		return mCancel;
 	}
 	
 	@SuppressWarnings("unused")
-	@net.bogdoll.swing.Action("next")
+	@Listener("next")
 	private void doNext() {
-		List<Message> messages =  new ArrayList<Message>();
-		if(getCurrentPage().isValid(messages)) {
-			clearMessages();
-			getCurrentPage().storeSettings(mContext);
+		WizardPage<WC> current = currentPageProperty().get();
+		current.checkIfValid();
+		if(current.isValidProperty().get()) {
+			current.storeSettings(mContext);
+			
 			mPageProvider.next();
-			addPageStepName(getCurrentPage().getName());
-			getCurrentPage().restoreSettings(mContext);
+			
+			current = currentPageProperty().get();
+			addPageStepName(current.getName());
+			current.restoreSettings(mContext);
 		} 
-		else {
-			setMessages(messages);
-		}
 		
 		refreshUI();
 	}
-	
-	private void clearMessages() {
-		setMessages(Collections.<Message>emptyList());
-	}
-	
-	private void setMessages(List<Message> aMessages) {
-		List<Message> old = mMessages;
-		mMessages = new ArrayList<Message>(aMessages);
-		mPCS.firePropertyChange(PROP_PAGE_MESSAGES, old, mMessages);
-	}
-	
+
 	@SuppressWarnings("unused")
-	@net.bogdoll.swing.Action("prev")
+	@Listener("prev")
 	private void doPrev() {
-		getCurrentPage().storeSettings(mContext);
+		WizardPage<WC> current = currentPageProperty().get();
+		current.storeSettings(mContext);
+		
 		mPageProvider.prev();
+		
+		current = currentPageProperty().get();
 		removePageStepName();
-		getCurrentPage().restoreSettings(mContext);
+		current.restoreSettings(mContext);
 
 		refreshUI();
 	}
 	
-	private void refreshUI() {
-		setPageVisual(getCurrentPage().getVisual());
-		refreshButton();
-	}
-	
-	private WizardPage<WC> getCurrentPage() {
-		return mPageProvider.getCurrent();
+	public Property<WizardPage<WC>> currentPageProperty() {
+		return mCurrentPage;
 	}
 
 	@SuppressWarnings("unused")
-	@net.bogdoll.swing.Action("finish")
+	@Listener("finish")
 	private void doFinish() {
-		List<Message> messages = new ArrayList<Message>();
-		if(getCurrentPage().isValid(messages)) {
-			clearMessages();
-			getCurrentPage().storeSettings(mContext);
-			if(mPageVisual!=null) {
-				SwingUtilities.getRoot(mPageVisual).setVisible(false);
+		WizardPage<WC> current = currentPageProperty().get();
+		current.checkIfValid();
+		if(current.isValidProperty().get()) {
+			current.storeSettings(mContext);
+			mResult = FINISHED_OPTION;
+			JComponent visual = current.getVisual();
+			if(visual!=null) {
+				SwingUtilities.getRoot(visual).setVisible(false);
 			}
 		}
-		else {
-			setMessages(messages);
-		}
+	}
+	
+	private void refreshUI() {
+		
 	}
 	
 	@SuppressWarnings("unused")
-	@net.bogdoll.swing.Action("cancel")
+	@Listener("cancel")
 	private void doCancel() {
-		if(mPageVisual!=null) {
-			SwingUtilities.getRoot(mPageVisual).setVisible(false);
+		JComponent visual = currentPageProperty().get().getVisual();
+		if(visual!=null) {
+			mResult = CANCELED_OPTION;
+			SwingUtilities.getRoot(visual).setVisible(false);
 		}
 	}
 
-	private void refreshButton() {
-		getPrevAction().setEnabled( mPageProvider.hasPrev() );
-		getNextAction().setEnabled( mPageProvider.hasNext() );
-		getFinishAction().setEnabled( mPageProvider.canFinish() );
-	}
-	
 	private void addPageStepName(String aPageName) {
-		Object old = mPageNames;
-		List<String> newList = new ArrayList<String>(mPageNames);
+		List<String> newList = new ArrayList<String>(mPageNames.get());
 		newList.add(aPageName);
-		mPageNames = newList;
-		mPCS.firePropertyChange(PROP_STEP_NAMES, old, mPageNames);
+		mPageNames.set(newList);
 	}
 
 	private void removePageStepName() {
-		Object old = mPageNames;
-		List<String> newList = new ArrayList<String>(mPageNames);
+		List<String> newList = new ArrayList<String>(mPageNames.get());
 		newList.remove(newList.size()-1);
-		mPageNames = newList;
-		mPCS.firePropertyChange(PROP_STEP_NAMES, old, mPageNames);
+		mPageNames.set(newList);
 	}
 
-	private void setPageVisual(JComponent aVisual) {
-		Object old = mPageVisual;
-		mPageVisual = aVisual;
-		mPCS.firePropertyChange(PROP_PAGE_VISUAL, old, mPageVisual);
+	public Property<List<String>> pageStepNamesProperty() {
+		return mPageNames;
 	}
 	
-	void addPropertyChangeListener(PropertyChangeListener aListener) {
-		mPCS.addPropertyChangeListener(aListener);
+	public Object getResult() {
+		return mResult;
 	}
 
-	void addPropertyChangeListener(String aPropertyName, PropertyChangeListener aListener) {
-		mPCS.addPropertyChangeListener(aPropertyName, aListener);
-	}
-
-	void removePropertyChangeListener(PropertyChangeListener aListener) {
-		mPCS.removePropertyChangeListener(aListener);
-	}
-
-	void removePropertyChangeListener(String aPropertyName, PropertyChangeListener aListener) {
-		mPCS.removePropertyChangeListener(aPropertyName, aListener);
-	}
-
-	JComponent getPageVisual() {
-		return mPageVisual;
-	}
-
-	List<String> getStepNames() {
-		return mPageNames;
+	public WC getContext() {
+		return mContext;
 	}
 }

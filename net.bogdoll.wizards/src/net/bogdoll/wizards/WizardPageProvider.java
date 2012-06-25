@@ -1,13 +1,32 @@
 package net.bogdoll.wizards;
 
-public interface WizardPageProvider<WC> 
+import net.bogdoll.property.Property;
+
+
+public abstract class WizardPageProvider<WC>  
 {
-	WizardPage<WC> getCurrent();
-	void prev();
-	void next();
+	public final static String PROP_CURRENT_PAGE = "currentPage";
 	
-	boolean hasPrev();
-	boolean hasNext();
+	private final Property<WizardPage<WC>> mCurrent = new Property<WizardPage<WC>>();
+
+	public Property<WizardPage<WC>> currentPageProperty() {
+		return mCurrent;
+	}
+
+	public abstract void prev();
+	public abstract void next();
+	public abstract boolean hasPrev();
+	public abstract boolean hasNext();
 	
-	boolean canFinish();
+	public boolean canDoPrevious() {
+		return false;
+	}
+
+	public boolean canDoNext() {
+		return false;
+	}
+
+	public boolean canDoFinish() {
+		return false;
+	}
 }

@@ -2,8 +2,6 @@ package net.bogdoll.wizards;
 
 import java.awt.Dimension;
 import java.awt.Font;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -12,8 +10,11 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import net.bogdoll.property.AnnotatedProperty;
+import net.bogdoll.swing.Listener;
 
-class WizardStepsPane implements PropertyChangeListener
+
+class WizardStepsPane 
 {
 	private final WizardController<?> mController;
 	private JPanel mVisual;
@@ -21,7 +22,7 @@ class WizardStepsPane implements PropertyChangeListener
 	public WizardStepsPane(WizardController<?> aController) 
 	{
 		mController = aController;
-		mController.addPropertyChangeListener(WizardController.PROP_STEP_NAMES, this);
+		AnnotatedProperty.connect(this,  mController.pageStepNamesProperty(), WizardController.PROP_STEP_NAMES);
 	}
 	
 	public JComponent getVisual() {
@@ -31,18 +32,17 @@ class WizardStepsPane implements PropertyChangeListener
 			mVisual.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 			mVisual.setPreferredSize(new Dimension(100,100));
 			mVisual.setLayout(new BoxLayout(mVisual, BoxLayout.Y_AXIS));
-			displayPageNames(mController.getStepNames());
+			displayPageNames(mController.pageStepNamesProperty().get());
 		}
 		return mVisual;
 	}
 
 
-	@Override
-	public void propertyChange(PropertyChangeEvent evt) 
+	@SuppressWarnings("unused")
+	@Listener(WizardController.PROP_STEP_NAMES)
+	private void newPageSteps(List<String> aOld, List<String> aNew) 
 	{
-		@SuppressWarnings("unchecked")
-		List<String> stepNames = (List<String>) evt.getNewValue();
-		displayPageNames(stepNames);
+		displayPageNames(aNew);
 	}
 	
 	private void displayPageNames(List<String> aStepNames) 

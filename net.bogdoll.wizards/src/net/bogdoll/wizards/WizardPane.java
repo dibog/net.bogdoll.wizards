@@ -10,15 +10,15 @@ public class WizardPane
 {
 	private JComponent mMainVisual;
 	
-	public <WC> WizardPane(WizardPageProvider<WC> aPageProvider, WC aContext)
-	{
-		this(new WizardController<WC>(aPageProvider, aContext));
-	}
+//	public <WC> WizardPane(WizardPageProvider<WC> aPageProvider, WC aContext)
+//	{
+//		this(new WizardController<WC>(aPageProvider, aContext));
+//	}
 
-	public WizardPane(WizardController<?> aController)
+	public <WC> WizardPane(WizardController<WC> aController, WizardPageProvider<WC> aPageProvider)
 	{
 		JComponent stepsVisual = new WizardStepsPane(aController).getVisual();
-		JComponent buttonsVisual = new WizardButtonsRow(aController).getButtonsRow();
+		JComponent buttonsVisual = new WizardButtonsRow(aController, aPageProvider).getButtonsRow();
 		JComponent pageVisual = new WizardContentPane(aController).getVisual();
 		mMainVisual = initVisual(stepsVisual, buttonsVisual, pageVisual);
 	}

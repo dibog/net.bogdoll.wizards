@@ -2,12 +2,17 @@ package net.bogdoll.swing;
 
 import java.awt.event.ActionEvent;
 import java.lang.reflect.Method;
+import java.util.EnumSet;
 
 import javax.swing.AbstractAction;
+
+import net.bogdoll.swing.Listener.Type;
 
 public class AnnotatedAction extends AbstractAction 
 {
 	private static final long serialVersionUID = 1L;
+	
+	private static final EnumSet<Type> ACTION = EnumSet.of(Type.Unspecified, Type.Action);
 	
 	private final Object mInstance;
 	private final Method mMethod;
@@ -18,8 +23,8 @@ public class AnnotatedAction extends AbstractAction
 		Method method = null;
 		boolean withArg = false;
 		for(Method m : aInstance.getClass().getDeclaredMethods()) {
-			Action action = m.getAnnotation(Action.class);
-			if(action!=null) {
+			Listener action = m.getAnnotation(Listener.class);
+			if(action!=null && ACTION.contains(action.type())) {
 				if(action.value().equals(aCommand)) {
 					Class<?>[] params = m.getParameterTypes();
 					if(params.length==0) {
@@ -56,9 +61,5 @@ public class AnnotatedAction extends AbstractAction
 			}
 		} catch (Exception ex) {
 		}
-	}
-
-	public void setText(String aText) {
-		putValue(NAME, aText);
 	}
 }

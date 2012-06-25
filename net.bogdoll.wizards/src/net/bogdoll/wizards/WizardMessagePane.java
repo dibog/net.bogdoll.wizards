@@ -2,8 +2,6 @@ package net.bogdoll.wizards;
 
 import java.awt.Container;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.util.List;
 
@@ -14,23 +12,36 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-class WizardMessagePane implements PropertyChangeListener
+import net.bogdoll.property.AnnotatedProperty;
+import net.bogdoll.swing.Listener;
+
+class WizardMessagePane 
 {
 	private JPanel mVisual;
+	private AnnotatedProperty<List<Message>> mValidationMessages;
 	
 	public WizardMessagePane(WizardController<?> aController)
 	{
-		aController.addPropertyChangeListener(WizardController.PROP_PAGE_MESSAGES, this);
+		AnnotatedProperty.connect(this, aController.currentPageProperty(), WizardController.PROP_CURRENT_PAGE);
 	}
 
+	@SuppressWarnings("unused")
+	@Listener(WizardController.PROP_CURRENT_PAGE)
+	private void newCurrentPage(WizardPage<?> aOld, WizardPage<?> aNew) {
+		if(mValidationMessages!=null) {
+			mValidationMessages.disconnect();
+		}
+		if(aNew!=null) {
+			mValidationMessages = AnnotatedProperty.connect(this, aNew.validationMessagesProperty(), WizardController.PROP_PAGE_MESSAGES);
+		}
+	}
 
-	@Override
-	public void propertyChange(PropertyChangeEvent evt) {
-		if(evt.getPropertyName().equals(WizardController.PROP_PAGE_MESSAGES) && mVisual!=null) {
+	@SuppressWarnings("unused")
+	@Listener(WizardController.PROP_PAGE_MESSAGES)
+	private void newValidationMessages(List<Message> aOld, List<Message> aNew) {
+		if(mVisual!=null) {
 			mVisual.removeAll();
-			@SuppressWarnings("unchecked")
-			List<Message> messages = (List<Message>) evt.getNewValue();
-			for(Message m : messages)
+			for(Message m : aNew)
 			{
 				mVisual.add(label(m));
 			}

@@ -5,7 +5,8 @@ import java.util.Properties;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 
-import net.bogdoll.wizards.WizardPane;
+import net.bogdoll.wizards.WizardController;
+import net.bogdoll.wizards.WizardDialog;
 
 
 public class MyWizard 
@@ -17,13 +18,23 @@ public class MyWizard
 		} catch (Exception e) {
 		}
 		
-		Properties props = new Properties();
-		WizardPane pane = new WizardPane(new MyPageProvider(), props);
+		WizardDialog<Properties> wizard = WizardDialog.create(new MyPageProvider(), new Properties());
+		wizard.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		wizard.setSize(640,400);
 		
-		JFrame frame = new JFrame();
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setContentPane(pane.getVisual());
-		frame.setSize(640,400);
-		frame.setVisible(true);
+		
+		Object result = wizard.showWizard();
+		
+		if(result==WizardController.FINISHED_OPTION) {
+			System.out.println("Finished");
+			Properties props = wizard.getContext();
+			System.out.println(props);
+		}
+		else if(result==WizardController.CANCELED_OPTION) {
+			System.out.println("Canceled");
+		} 
+		else {
+			System.out.println("Unknown");
+		}
 	}
 }

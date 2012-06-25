@@ -1,16 +1,15 @@
 package net.bogdoll.wizards;
 
 import java.awt.BorderLayout;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 
 import javax.swing.BorderFactory;
-import javax.swing.JComponent;
 import javax.swing.JPanel;
 
+import net.bogdoll.property.AnnotatedProperty;
+import net.bogdoll.swing.Listener;
 import net.bogdoll.swing.ReplaceablePane;
 
-class WizardContentPane implements PropertyChangeListener 
+class WizardContentPane 
 {
 	private WizardController<?> mController;
 	private ReplaceablePane mPageContent;
@@ -19,7 +18,7 @@ class WizardContentPane implements PropertyChangeListener
 	public WizardContentPane(WizardController<?> aController) 
 	{
 		mController = aController;
-		mController.addPropertyChangeListener(WizardController.PROP_PAGE_VISUAL, this);
+		AnnotatedProperty.connect(this, mController.currentPageProperty(), WizardController.PROP_CURRENT_PAGE);
 	}
 	
 	public JPanel getVisual() 
@@ -28,7 +27,7 @@ class WizardContentPane implements PropertyChangeListener
 			JPanel panel = new JPanel(new BorderLayout());
 			panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 
-			mPageContent = new ReplaceablePane(mController.getPageVisual());
+			mPageContent = new ReplaceablePane(mController.currentPageProperty().get().getVisual());
 			panel.add(mPageContent, BorderLayout.CENTER);
 			
 			panel.add(new WizardMessagePane(mController).getVisual(), BorderLayout.SOUTH);
@@ -38,12 +37,9 @@ class WizardContentPane implements PropertyChangeListener
 		return mVisual;
 	}
 	
-	@Override
-	public void propertyChange(PropertyChangeEvent evt) {
-		if(evt.getPropertyName().equals(WizardController.PROP_PAGE_VISUAL))
-		{
-			JComponent comp = (JComponent) evt.getNewValue();
-			mPageContent.setComponent(comp);
-		}
+	@SuppressWarnings("unused")
+	@Listener(WizardController.PROP_CURRENT_PAGE)
+	private void newPageVisual(WizardPage<?> aOld, WizardPage<?> aNew) {
+		mPageContent.setComponent(aNew.getVisual());
 	}
 }

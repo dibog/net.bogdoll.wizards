@@ -1,7 +1,5 @@
 package net.bogdoll.wizardsexamples;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Properties;
 
@@ -11,28 +9,27 @@ import net.bogdoll.swing.TextModel;
 import net.bogdoll.wizards.Message;
 import net.bogdoll.wizards.WizardPage;
 
-public class Page1 extends WizardPage<Properties> implements PropertyChangeListener
+public class Page2 extends WizardPage<Properties>
 {
-	private Visual1 mVisual;
+	private Visual2 mVisual;
 	private TextModel mChoice;
 
 	@Override
 	public JComponent getVisual() {
 		if(mVisual==null) {
-			mVisual = new Visual1(this);
+			mVisual = new Visual2(this);
 		}
 		return mVisual;
 	}
 	
 	@Override
 	public String getName() {
-		return "Page #1";
+		return "Page #2";
 	}
 	
 	public TextModel getChoice() {
 		if(mChoice==null) {
 			mChoice = new TextModel();
-			mChoice.addPropertyChangeListner(TextModel.PROP_TEXT, this);
 		}
 		return mChoice;
 	}
@@ -61,24 +58,12 @@ public class Page1 extends WizardPage<Properties> implements PropertyChangeListe
 
 	@Override
 	public void restoreSettings(Properties aWizardContext) {
-		String choice = aWizardContext.getProperty("Page1.choice", "");
+		String choice = aWizardContext.getProperty("Page2.choice", "");
 		getChoice().setText(choice);
 	}
 
 	@Override
 	public void storeSettings(Properties aWizwardContext) {
-		aWizwardContext.put("Page1.choice", mChoice.getText());
+		aWizwardContext.put("Page2.choice", mChoice.getText());
 	}
-
-	@Override
-	public void propertyChange(PropertyChangeEvent evt) {
-		if(TextModel.PROP_TEXT.equals(evt.getPropertyName()) && evt.getSource() instanceof TextModel) {
-			checkIfValid();
-		}
-	}
-	
-	public boolean isDynamic() {
-		return true;
-	}
-
 }

@@ -7,7 +7,7 @@ import java.util.Properties;
 import net.bogdoll.wizards.WizardPage;
 import net.bogdoll.wizards.WizardPageProvider;
 
-public class MyPageProvider implements WizardPageProvider<Properties> 
+public class MyPageProvider extends WizardPageProvider<Properties> 
 {
 	private List<WizardPage<Properties>> mPages;
 	private int mCurrent = 0;
@@ -15,10 +15,14 @@ public class MyPageProvider implements WizardPageProvider<Properties>
 	public MyPageProvider() {
 		mPages = new ArrayList<WizardPage<Properties>>();
 		mPages.add(new Page1());
-		mPages.add(new PageN("Page #2"));
+		mPages.add(new Page2());
 		mPages.add(new PageN("Page #3"));
-		mPages.add(new PageN("Page #4"));
-		mPages.add(new PageN("Page #5"));
+		mPages.add(new Page4());
+		mPages.add(new Page5());
+		mPages.add(new Page6());
+		mPages.add(new PageN("Page #7"));
+		
+		currentPageProperty().set(mPages.get(0));
 	}
 	
 	@Override
@@ -35,6 +39,7 @@ public class MyPageProvider implements WizardPageProvider<Properties>
 	public void prev() {
 		if(hasPrev()) {
 			mCurrent--;
+			currentPageProperty().set(mPages.get(mCurrent));
 		}
 	}
 
@@ -42,16 +47,29 @@ public class MyPageProvider implements WizardPageProvider<Properties>
 	public void next() {
 		if(hasNext()) {
 			mCurrent++;
+			currentPageProperty().set(mPages.get(mCurrent));
 		}
 	}
 	
 	@Override
-	public WizardPage<Properties> getCurrent() {
-		return mPages.get(mCurrent);
+	public boolean canDoPrevious() {
+		return hasPrev();
+	}
+	
+	@Override
+	public boolean canDoNext() {
+		WizardPage<Properties> current = currentPageProperty().get();
+		return  current.isDynamic() 
+				? current.isValidProperty().get() && hasNext()
+				: hasNext();
 	}
 
 	@Override
-	public boolean canFinish() {
-		return !hasNext();
+	public boolean canDoFinish() {
+		WizardPage<Properties> current = currentPageProperty().get();
+		boolean canFinish = current.canFinishEarlierProperty().get() || !hasNext();
+		return  current.isDynamic() 
+				? current.isValidProperty().get() && canFinish
+				: canFinish;
 	}
 }

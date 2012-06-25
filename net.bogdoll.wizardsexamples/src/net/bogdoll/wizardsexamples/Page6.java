@@ -6,13 +6,12 @@ import javax.swing.JComponent;
 
 import net.bogdoll.wizards.WizardPage;
 
-public class PageN extends WizardPage<Properties>
+public class Page6 extends WizardPage<Properties>
 {
-	private final String mPageName;
 	private Visual mVisual;
-	
-	public PageN(String aPage) {
-		mPageName = aPage;		
+
+	public Page6() {
+		canFinishEarlierProperty().set(true);
 	}
 	
 	@Override
@@ -22,9 +21,9 @@ public class PageN extends WizardPage<Properties>
 		}
 		return mVisual;
 	}
-
+	
 	@Override
 	public String getName() {
-		return mPageName;
+		return "Page #6";
 	}
 }
